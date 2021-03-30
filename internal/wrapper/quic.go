@@ -19,6 +19,8 @@ type Config struct {
 	Certificate *x509.Certificate
 	PrivateKey  crypto.PrivateKey
 	SkipVerify  bool
+	PathScheduler string
+	StreamScheduler string
 }
 
 func getDefaultQuicConfig() *quic.Config {
