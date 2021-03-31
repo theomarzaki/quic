@@ -1,8 +1,6 @@
 package wrapper
 
 import (
-	"context"
-
 	quic "github.com/lucas-clemente/quic-go"
 )
 
@@ -13,7 +11,7 @@ type Listener struct {
 
 // Accept accepts incoming streams
 func (l *Listener) Accept() (*Session, error) {
-	s, err := l.l.Accept(context.TODO())
+	s, err := l.l.Accept()
 	if err != nil {
 		return nil, err
 	}

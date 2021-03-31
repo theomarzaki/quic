@@ -3,7 +3,6 @@
 package wrapper
 
 import (
-	"context"
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
@@ -12,6 +11,7 @@ import (
 	"net"
 
 	quic "github.com/lucas-clemente/quic-go"
+	//qerr "github.com/lucas-clemente/quic-go/qerr"
 )
 
 // Config represents the configuration of a Quic session
@@ -19,14 +19,10 @@ type Config struct {
 	Certificate *x509.Certificate
 	PrivateKey  crypto.PrivateKey
 	SkipVerify  bool
-	PathScheduler string
-	StreamScheduler string
 }
 
 func getDefaultQuicConfig() *quic.Config {
 	return &quic.Config{
-		MaxIncomingStreams:                    1000,
-		MaxIncomingUniStreams:                 -1,              // disable unidirectional streams
 		MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
 		MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
 		KeepAlive:                             true,
@@ -42,11 +38,12 @@ func Client(conn net.Conn, config *Config) (*Session, error) {
 	if rAddr == nil {
 		return nil, fmt.Errorf("quic: creating client without remote address")
 	}
-	s, err := quic.Dial(newFakePacketConn(conn), rAddr, rAddr.String(), tlscfg, getDefaultQuicConfig())
+	//s, err := quic.Dial(newFakePacketConn(conn), rAddr, rAddr.String(), tlscfg, getDefaultQuicConfig())
+	s, err := quic.DialAddr(rAddr.String(),tlscfg,getDefaultQuicConfig())
 	if err != nil {
 		return nil, err
 	}
-	return &Session{s: s}, nil
+	return &Session{s: s,conf: config}, nil
 }
 
 // Dial dials the address over quic
@@ -56,7 +53,7 @@ func Dial(addr string, config *Config) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Session{s: s}, nil
+	return &Session{s: s,conf: config}, nil
 }
 
 // Server creates a listener for listens for incoming QUIC sessions
@@ -96,6 +93,7 @@ func getTLSConfig(config *Config) *tls.Config {
 // A Session is a QUIC connection between two peers.
 type Session struct {
 	s quic.Session
+	conf *Config
 }
 
 // OpenStream opens a new stream
@@ -109,7 +107,7 @@ func (s *Session) OpenStream() (*Stream, error) {
 
 // AcceptStream accepts an incoming stream
 func (s *Session) AcceptStream() (*Stream, error) {
-	str, err := s.s.AcceptStream(context.TODO())
+	str, err := s.s.AcceptStream()
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +116,9 @@ func (s *Session) AcceptStream() (*Stream, error) {
 
 // GetRemoteCertificates returns the certificate chain presented by remote peer.
 func (s *Session) GetRemoteCertificates() []*x509.Certificate {
-	return s.s.ConnectionState().PeerCertificates
+	//return s.s.ConnectionState().PeerCertificates
+	certificates := []*x509.Certificate{s.conf.Certificate}
+	return  certificates
 }
 
 // Close the connection
@@ -129,9 +129,10 @@ func (s *Session) Close() error {
 // CloseWithError closes the connection with an error.
 // The error must not be nil.
 func (s *Session) CloseWithError(code uint16, err error) error {
-	var e = "nil"
+	e := error(nil)
 	if err != nil {
-		e = err.Error()
+		e = err
 	}
-	return s.s.CloseWithError(quic.ErrorCode(code), e)
+	return s.CloseWithError(code, e)
 }
+
