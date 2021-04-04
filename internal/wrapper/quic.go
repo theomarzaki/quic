@@ -31,7 +31,6 @@ func getDefaultQuicConfig() *quic.Config {
 		StreamScheduler:                       "RoundRobin",
 		HandshakeTimeout:						10 * time.Second,
 		CreatePaths:							true,
-		BindAddr:								"0.0.0.0",
 	}
 }
 
@@ -63,7 +62,7 @@ func Dial(addr string, config *Config) (*Session, error) {
 // Server creates a listener for listens for incoming QUIC sessions
 func Server(conn net.Conn, config *Config) (*Listener, error) {
 	tlscfg := getTLSConfig(config)
-	l, err := quic.ListenAddr(conn.LocalAddr().String(), tlscfg, &quic.Config{})
+	l, err := quic.Listen(newFakePacketConn(conn), tlscfg, &quic.Config{})
 
 	if err != nil {
 		return nil, err
