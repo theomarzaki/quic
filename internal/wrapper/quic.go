@@ -28,6 +28,9 @@ func getDefaultQuicConfig() *quic.Config {
 		KeepAlive:                             true,
 		PathScheduler:                         "LowLatency",
 		StreamScheduler:                       "RoundRobin",
+		HandshakeTimeout:						10 * time.Second,
+		CreatePaths:							true,
+		BindAddr:								"0.0.0.0"
 	}
 }
 
@@ -43,7 +46,7 @@ func Client(conn net.Conn, config *Config) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Session{s: s,conf: config}, nil
+	return &Session{s: s}, nil
 }
 
 // Dial dials the address over quic
@@ -53,13 +56,14 @@ func Dial(addr string, config *Config) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Session{s: s,conf: config}, nil
+	return &Session{s: s}, nil
 }
 
 // Server creates a listener for listens for incoming QUIC sessions
 func Server(conn net.Conn, config *Config) (*Listener, error) {
 	tlscfg := getTLSConfig(config)
 	l, err := quic.Listen(newFakePacketConn(conn), tlscfg, getDefaultQuicConfig())
+
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +97,6 @@ func getTLSConfig(config *Config) *tls.Config {
 // A Session is a QUIC connection between two peers.
 type Session struct {
 	s quic.Session
-	conf *Config
 }
 
 // OpenStream opens a new stream
@@ -117,8 +120,7 @@ func (s *Session) AcceptStream() (*Stream, error) {
 // GetRemoteCertificates returns the certificate chain presented by remote peer.
 func (s *Session) GetRemoteCertificates() []*x509.Certificate {
 	//return s.s.ConnectionState().PeerCertificates
-	certificates := []*x509.Certificate{s.conf.Certificate}
-	return  certificates
+	return  []*x509.Certificate{}
 }
 
 // Close the connection
