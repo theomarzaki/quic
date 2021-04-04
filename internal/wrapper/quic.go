@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	quic "github.com/lucas-clemente/quic-go"
 	//qerr "github.com/lucas-clemente/quic-go/qerr"
@@ -30,7 +31,7 @@ func getDefaultQuicConfig() *quic.Config {
 		StreamScheduler:                       "RoundRobin",
 		HandshakeTimeout:						10 * time.Second,
 		CreatePaths:							true,
-		BindAddr:								"0.0.0.0"
+		BindAddr:								"0.0.0.0",
 	}
 }
 
@@ -41,8 +42,8 @@ func Client(conn net.Conn, config *Config) (*Session, error) {
 	if rAddr == nil {
 		return nil, fmt.Errorf("quic: creating client without remote address")
 	}
-	//s, err := quic.Dial(newFakePacketConn(conn), rAddr, rAddr.String(), tlscfg, getDefaultQuicConfig())
-	s, err := quic.DialAddr(rAddr.String(),tlscfg,getDefaultQuicConfig())
+	s, err := quic.Dial(newFakePacketConn(conn), rAddr, rAddr.String(), tlscfg, getDefaultQuicConfig(),nil)
+	// s, err := quic.DialAddr(rAddr.String(),tlscfg,getDefaultQuicConfig())
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func Dial(addr string, config *Config) (*Session, error) {
 // Server creates a listener for listens for incoming QUIC sessions
 func Server(conn net.Conn, config *Config) (*Listener, error) {
 	tlscfg := getTLSConfig(config)
-	l, err := quic.Listen(newFakePacketConn(conn), tlscfg, getDefaultQuicConfig())
+	l, err := quic.ListenAddr(conn.LocalAddr().String(), tlscfg, &quic.Config{})
 
 	if err != nil {
 		return nil, err
