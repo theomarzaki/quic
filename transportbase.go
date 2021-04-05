@@ -125,7 +125,7 @@ func (b *TransportBase) acceptStreams() {
 			if stopErr != nil {
 				b.log.Errorf("Failed to stop transport: %v", stopErr)
 			}
-			return
+			break
 		}
 
 		stream := &BidirectionalStream{s: s}
