@@ -30,6 +30,7 @@ func getDefaultQuicConfig() *quic.Config {
 		PathScheduler:                         "LowLatency",
 		StreamScheduler:                       "RoundRobin",
 		HandshakeTimeout:						10 * time.Second,
+		IdleTimeout:							5 * time.Second,
 		CreatePaths:							true,
 	}
 }
